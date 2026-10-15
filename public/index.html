@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WasmArcade</title>
+  <meta name="claude:viewport-fit-sides" content="cover">
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;500;600;700&family=Kantumruy+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'Kantumruy Pro', 'sans-serif'], display: ['Chakra Petch', 'Kantumruy Pro', 'Inter', 'sans-serif'] },
+          colors: {
+            ink: {
+              bg: '#0c0f15', panel: '#131823', raise: '#1a2130', line: '#232c3d',
+              muted: '#8b95a7', accent: '#2dd4bf', warn: '#f5b544', danger: '#f2667a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Single dark arcade look, chosen deliberately */
+    :root { color-scheme: dark; }
+    body { background: #0c0f15; color: #e2e8f0; }
+    .gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid #2dd4bf; outline-offset: 2px; }
+    html[lang="km"] body { line-height: 1.75; }
+    html[lang="km"] .km-tight { line-height: 1.6; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0c0f15; }
+    ::-webkit-scrollbar-thumb { background: #232c3d; border-radius: 4px; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { scrollbar-width: none; }
+    .icon-btn { width: 2.25rem; height: 2.25rem; display: inline-flex; align-items: center; justify-content: center;
+      border-radius: .625rem; border: 1px solid #232c3d; background: #0c0f15; color: #cbd5e1; transition: .15s; }
+    .icon-btn:hover { border-color: rgba(45,212,191,.5); color: #fff; }
+    .chip { white-space: nowrap; padding: .375rem .875rem; border-radius: 999px; border: 1px solid #232c3d;
+      font-size: .8125rem; color: #cbd5e1; background: #131823; transition: .15s; }
+    .chip:hover { color: #fff; }
+    .chip[aria-pressed="true"] { background: #2dd4bf; color: #0c0f15; border-color: #2dd4bf; font-weight: 600; }
+    /* Covers: Steam header art is 460x215; the fallback is a designed title card. */
+    .cover { position: relative; overflow: hidden; aspect-ratio: 460 / 215; max-width: 100%; background: #131823; }
+    .cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .cover-fallback { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: .15rem;
+      padding: .75rem .9rem; color: #f8fafc;
+      background:
+        repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px),
+        radial-gradient(120% 90% at 85% 10%, hsl(var(--h) 85% 55% / .45), transparent 60%),
+        linear-gradient(135deg, hsl(var(--h) 55% 20%), hsl(calc(var(--h) + 35) 60% 9%)); }
+    .cover-fallback .ttl { font-family: 'Chakra Petch', 'Kantumruy Pro', sans-serif; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .03em; line-height: 1.05; font-size: clamp(1rem, 2.4vw, 1.35rem); text-wrap: balance; text-shadow: 0 2px 10px rgba(0,0,0,.5); }
+    .cover-fallback .eng { font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: rgba(248,250,252,.7); }
+    .cover.sm .ttl { font-size: .62rem; }
+    .cover.sm .eng { display: none; }
+    .cover.sm .cover-fallback { padding: .35rem .45rem; }
+    .chev { transition: transform .2s; }
+    [aria-expanded="true"] .chev { transform: rotate(180deg); }
+    .seg button[aria-pressed="true"] { background: #2dd4bf; color: #0c0f15; }
+    @media (prefers-reduced-motion: reduce) { .chev, .card { transition: none !important; } }
+  </style>
+
+
+  <!-- ============ HEADER ============ -->
+  <header style="top: env(safe-area-inset-top, 0px)" class="sticky z-40 bg-ink-bg/90 backdrop-blur border-b border-ink-line">
+    <div class="max-w-6xl mx-auto gutter h-14 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-8 h-8 rounded-lg bg-ink-accent/15 border border-ink-accent/40 flex items-center justify-center shrink-0">
+          <i class="fa-solid fa-gamepad text-ink-accent text-sm"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="font-bold text-white leading-tight">Wasm<span class="text-ink-accent">Arcade</span></div>
+          <div class="text-xs text-ink-muted truncate hidden sm:block km-tight" data-i18n="tagline"></div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <div class="flex rounded-lg border border-ink-line overflow-hidden text-xs" role="group" data-i18n-title="langLabel">
+          <button id="lang-en" onclick="setLang('en')" class="px-2.5 py-1.5">EN</button>
+          <button id="lang-km" onclick="setLang('km')" class="px-2.5 py-1.5">ខ្មែរ</button>
+        </div>
+        <button onclick="openModal('fileModal')" class="icon-btn" data-i18n-title="fileChecker">
+          <i class="fa-solid fa-file-circle-check text-sm"></i>
+        </button>
+        <button onclick="openModal('storageModal')" class="icon-btn" data-i18n-title="storage">
+          <i class="fa-solid fa-hard-drive text-sm"></i>
+        </button>
+        <button onclick="openModal('systemModal')" class="h-9 px-3 rounded-lg border border-ink-line bg-ink-panel hover:border-ink-accent/50 text-sm flex items-center gap-2 transition">
+          <span id="sys-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+          <span class="hidden sm:inline" data-i18n="system"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl w-full mx-auto gutter py-6 flex-1 flex flex-col gap-8">
+
+    <!-- ============ LIBRARY ============ -->
+    <section class="flex flex-col gap-4">
+      <div class="flex items-end justify-between gap-3">
+        <div><h2 class="text-lg font-bold text-white" data-i18n="library"></h2><p class="text-sm text-ink-muted km-tight"><span data-i18n="opensInTab"></span> <span data-i18n="coverCredit"></span></p></div>
+        <span id="count" class="text-sm text-ink-muted"></span>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-2">
+        <div class="relative flex-1">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-muted text-sm"></i>
+          <input id="search" type="search" oninput="renderGrid()" data-i18n-ph="searchPh"
+            class="w-full h-10 pl-10 pr-3 bg-ink-panel border border-ink-line focus:border-ink-accent rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none" />
+        </div>
+        <select id="status" onchange="statusFilter = this.value; renderGrid()"
+          class="h-10 sm:w-56 bg-ink-panel border border-ink-line rounded-xl text-sm px-3 text-slate-200 focus:outline-none focus:border-ink-accent"></select>
+        <div class="seg flex h-10 rounded-xl border border-ink-line overflow-hidden shrink-0 self-start sm:self-auto">
+          <button id="view-grid" onclick="setView('grid')" class="w-11 text-slate-300 hover:text-white transition" data-i18n-title="viewGrid"><i class="fa-solid fa-table-cells-large"></i></button>
+          <button id="view-list" onclick="setView('list')" class="w-11 text-slate-300 hover:text-white transition border-l border-ink-line" data-i18n-title="viewList"><i class="fa-solid fa-list"></i></button>
+        </div>
+      </div>
+
+      <div id="cats" class="flex gap-2 overflow-x-auto no-scrollbar pb-1"></div>
+
+      <div id="grid"></div>
+    </section>
+  </main>
+
+  <footer class="border-t border-ink-line py-5 gutter text-xs text-ink-muted text-center km-tight">
+    <span data-i18n="footer"></span>
+  </footer>
+
+  <!-- ============ MODAL: SYSTEM ============ -->
+  <div id="systemModal" class="modal fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-ink-panel border border-ink-line rounded-2xl max-w-md w-full shadow-2xl">
+      <div class="px-5 py-4 border-b border-ink-line flex items-center justify-between">
+        <h3 class="font-semibold text-white" data-i18n="sysTitle"></h3>
+        <button onclick="closeModal('systemModal')" class="text-ink-muted hover:text-white" data-i18n-title="close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-5 space-y-5 text-sm">
+        <dl class="divide-y divide-ink-line">
+          <div class="flex justify-between gap-4 py-2"><dt class="text-ink-muted">WebGPU</dt><dd id="sys-webgpu" class="text-right"></dd></div>
+          <div class="flex justify-between gap-4 py-2"><dt class="text-ink-muted" data-i18n="sysGpu"></dt><dd id="sys-gpu" class="text-right truncate max-w-[60%]"></dd></div>
+          <div class="flex justify-between gap-4 py-2"><dt class="text-ink-muted" data-i18n="sysThreads"></dt><dd id="sys-threads" class="text-right"></dd></div>
+          <div class="flex justify-between gap-4 py-2"><dt class="text-ink-muted" data-i18n="sysPad"></dt><dd id="sys-pad" class="text-right truncate max-w-[60%]"></dd></div>
+          <div class="flex justify-between gap-4 py-2"><dt class="text-ink-muted" data-i18n="sysStorage"></dt><dd id="sys-storage" class="text-right"></dd></div>
+        </dl>
+        <div>
+          <h4 class="font-semibold text-white mb-2" data-i18n="tipsTitle"></h4>
+          <ul class="space-y-2 text-slate-300 km-tight">
+            <li class="flex gap-2"><i class="fa-solid fa-check text-ink-accent mt-1 text-xs"></i><span data-i18n="tip1"></span></li>
+            <li class="flex gap-2"><i class="fa-solid fa-check text-ink-accent mt-1 text-xs"></i><span data-i18n="tip2"></span></li>
+            <li class="flex gap-2"><i class="fa-solid fa-check text-ink-accent mt-1 text-xs"></i><span data-i18n="tip3"></span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: FILE CHECKER ============ -->
+  <div id="fileModal" class="modal fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-ink-panel border border-ink-line rounded-2xl max-w-lg w-full shadow-2xl">
+      <div class="px-5 py-4 border-b border-ink-line flex items-center justify-between">
+        <h3 class="font-semibold text-white" data-i18n="fileTitle"></h3>
+        <button onclick="closeModal('fileModal')" class="text-ink-muted hover:text-white" data-i18n-title="close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-5 space-y-4 text-sm">
+        <p class="text-slate-300 km-tight" data-i18n="fileDesc"></p>
+        <label id="dropzone" class="border-2 border-dashed border-ink-line hover:border-ink-accent rounded-xl p-6 flex flex-col items-center gap-2 text-center cursor-pointer transition">
+          <input type="file" class="hidden" onchange="handleFile(this.files[0]); this.value=''" />
+          <i class="fa-solid fa-cloud-arrow-up text-2xl text-ink-accent"></i>
+          <span class="text-white" data-i18n="dropHere"></span>
+        </label>
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <span class="text-ink-muted" data-i18n="trySample"></span>
+          <button onclick="sampleFile('DIABDAT.MPQ')" class="chip !text-xs">DIABDAT.MPQ</button>
+          <button onclick="sampleFile('Halo.xiso')" class="chip !text-xs">Halo.xiso</button>
+          <button onclick="sampleFile('valve.zip')" class="chip !text-xs">valve.zip</button>
+        </div>
+        <div id="file-result" class="hidden rounded-xl bg-ink-bg border border-ink-line p-4 space-y-2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MODAL: STORAGE ============ -->
+  <div id="storageModal" class="modal fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-ink-panel border border-ink-line rounded-2xl max-w-md w-full shadow-2xl">
+      <div class="px-5 py-4 border-b border-ink-line flex items-center justify-between">
+        <h3 class="font-semibold text-white" data-i18n="storageTitle"></h3>
+        <button onclick="closeModal('storageModal')" class="text-ink-muted hover:text-white" data-i18n-title="close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="p-5 space-y-4 text-sm">
+        <div class="flex items-center justify-between gap-3">
+          <div id="storage-used" class="text-white font-semibold"></div>
+          <button onclick="clearHubData()" class="h-9 px-4 rounded-lg bg-ink-danger/15 hover:bg-ink-danger/25 text-ink-danger border border-ink-danger/40 transition">
+            <i class="fa-solid fa-trash-can mr-1.5"></i><span data-i18n="clearData"></span>
+          </button>
+        </div>
+        <div id="storage-feedback" class="hidden text-ink-accent" data-i18n="cleared"></div>
+        <p class="text-slate-400 km-tight" data-i18n="storageNote"></p>
+        <details class="text-xs">
+          <summary class="cursor-pointer text-ink-muted hover:text-white" data-i18n="advancedMac"></summary>
+          <div class="mt-2 flex items-center gap-2 bg-ink-bg border border-ink-line rounded-lg p-2.5 font-mono">
+            <code id="mac-cmd" class="text-ink-accent break-all flex-1">du -sh ~/Library/Application\ Support/Google/Chrome/Default/IndexedDB/*</code>
+            <button onclick="copyCmd()" class="shrink-0 px-2 py-1 rounded border border-ink-line hover:border-ink-accent/50 font-sans"><span id="copy-label" data-i18n="copy"></span></button>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ===================== I18N ===================== */
+    const I18N = {
+      en: {
+        tagline: '25 classic games, right in your browser', opensInTab: 'Each game opens in a new tab.', altServer: 'Alternate server', langLabel: 'Language', viewGrid: 'Grid view', viewList: 'List view', showDetails: 'Show details', hideDetails: 'Hide details', servers: 'Servers', engineLabel: 'Engine', memLabel: 'Memory (estimate)', memOf: 'of the 4 GB tab limit', coverCredit: 'Cover art loads from Steam when available.', primary: 'Main',
+        system: 'System', fileChecker: 'File checker', storage: 'Storage', close: 'Close',
+        library: 'Game library', searchPh: 'Search games or engines…',
+        st_all: 'All games', st_ready: 'Ready to play', st_repaired: 'Fixed links', st_rom: 'Needs your file', st_favorites: 'Favorites',
+        cat_all: 'All', showing: '{n} of {total}',
+        emptyTitle: 'No games found', emptyBody: 'Try another search or category.',
+        play: 'Play', newWindow: 'Open in new window', checkFile: 'Check file', fav: 'Favorite',
+        memory: '{gb} GB memory',
+        badge_ready: 'Ready', badge_repaired: 'Fixed link', badge_rom: 'Needs file',
+        idleTitle: 'Pick a game to start', idleBody: 'Games load here. If a game stays blank, open it in a new window.', quickPicks: 'Try one:',
+        nowPlaying: 'Now playing', nothingPlaying: 'Nothing playing',
+        server: 'Server', adShieldTip: 'Ad-Shield: blocks pop-ups and redirects (some games may not work with it on)',
+        adOn: 'Ad-Shield: on', adOff: 'Ad-Shield: off',
+        fullscreen: 'Fullscreen', reload: 'Reload', closeGameTip: 'Close the game and free its memory',
+        note_rom: 'Needs your own game file: {file}.', note_repaired: 'The original link was cut off, so a replacement link is used.',
+        note_default: 'Blank screen? Some sites block embedding — open it in a new window.',
+        sysTitle: 'System check', sysGpu: 'Graphics', sysThreads: 'Multi-threading', sysPad: 'Controller', sysStorage: 'Storage used',
+        val_checking: 'Checking…', val_ready: 'Ready', val_noAdapter: 'No adapter', val_noWebgpu: 'Not supported — try Chrome or Edge',
+        val_threadsOn: 'Available', val_threadsOff: 'Off on this page (games enable it in their own tab)', val_noPad: 'Not connected — press any button', val_unknown: 'Unknown',
+        tipsTitle: 'Tips',
+        tip1: 'Use Chrome, Edge or Brave for games that need WebGPU.',
+        tip2: 'Each tab gets about 4 GB of game memory. Close one game before opening a heavy one.',
+        tip3: 'Some game sites show pop-up ads. Close them and go back to the game tab.',
+        fileTitle: 'Game file checker',
+        fileDesc: 'Some games need files you own (Halo .xiso, Half-Life .zip, Diablo DIABDAT.MPQ). This checks the file header on your device — nothing is uploaded.',
+        dropHere: 'Drop a file here or click to choose', trySample: 'Try a sample:',
+        fileSize: 'Size', fileHeader: 'Header', fileOk: 'Recognized',
+        fileBad: 'Not recognized. Make sure the file is not inside a .rar or .7z.', launchGame: 'Start {game}',
+        kind_mpq: 'Diablo data file (MPQ)', kind_xiso: 'Xbox disc image (Halo)',
+        kind_isoExt: 'Disc image — matched by file name only', kind_zip: 'ZIP/PAK archive (for Half-Life / CS)',
+        storageTitle: 'Storage', storageUsed: '{used} used of {quota}', clearData: 'Clear data', cleared: 'Cleared this page’s saved data.',
+        storageNote: 'This only clears data saved by this page. Each game site keeps its own cache — clear those in your browser settings.',
+        advancedMac: 'Advanced: check cache size on macOS', copy: 'Copy', copied: 'Copied',
+        footer: 'Games are hosted on third-party sites. Links may change or stop working.'
+      },
+      km: {
+        tagline: 'ហ្គេមបុរាណ ២៥ លេងផ្ទាល់ក្នុងកម្មវិធីរុករក', opensInTab: 'ហ្គេមនីមួយៗបើកក្នុងផ្ទាំងថ្មី។', altServer: 'ម៉ាស៊ីនមេជំនួស', langLabel: 'ភាសា', viewGrid: 'ទិដ្ឋភាពក្រឡា', viewList: 'ទិដ្ឋភាពបញ្ជី', showDetails: 'បង្ហាញព័ត៌មានលម្អិត', hideDetails: 'លាក់ព័ត៌មានលម្អិត', servers: 'ម៉ាស៊ីនមេ', engineLabel: 'ម៉ាស៊ីនហ្គេម', memLabel: 'អង្គចងចាំ (ប៉ាន់ស្មាន)', memOf: 'ក្នុងចំណោមដែនកំណត់ ៤ GB របស់ផ្ទាំង', coverCredit: 'រូបក្របផ្ទុកពី Steam នៅពេលមាន។', primary: 'មេ',
+        system: 'ប្រព័ន្ធ', fileChecker: 'ពិនិត្យឯកសារ', storage: 'ទំហំផ្ទុក', close: 'បិទ',
+        library: 'បណ្ណាល័យហ្គេម', searchPh: 'ស្វែងរកហ្គេម ឬម៉ាស៊ីនហ្គេម…',
+        st_all: 'ហ្គេមទាំងអស់', st_ready: 'លេងបានភ្លាម', st_repaired: 'តំណបានជួសជុល', st_rom: 'ត្រូវការឯកសាររបស់អ្នក', st_favorites: 'ចំណូលចិត្ត',
+        cat_all: 'ទាំងអស់', showing: '{n} ក្នុងចំណោម {total}',
+        emptyTitle: 'រកមិនឃើញហ្គេមទេ', emptyBody: 'សូមសាកល្បងពាក្យស្វែងរក ឬប្រភេទផ្សេង។',
+        play: 'លេង', newWindow: 'បើកក្នុងបង្អួចថ្មី', checkFile: 'ពិនិត្យឯកសារ', fav: 'ចំណូលចិត្ត',
+        memory: 'អង្គចងចាំ {gb} GB',
+        badge_ready: 'លេងបានភ្លាម', badge_repaired: 'តំណបានជួសជុល', badge_rom: 'ត្រូវការឯកសារ',
+        idleTitle: 'ជ្រើសរើសហ្គេមដើម្បីចាប់ផ្ដើម', idleBody: 'ហ្គេមនឹងបើកនៅទីនេះ។ បើអេក្រង់នៅទទេ សូមបើកក្នុងបង្អួចថ្មី។', quickPicks: 'សាកល្បង៖',
+        nowPlaying: 'កំពុងលេង', nothingPlaying: 'មិនទាន់មានហ្គេមកំពុងលេង',
+        server: 'ម៉ាស៊ីនមេ', adShieldTip: 'ការពារពាណិជ្ជកម្ម៖ រារាំងផ្ទាំងលោតឡើង និងការបញ្ជូនបន្ត (ហ្គេមខ្លះអាចមិនដំណើរការពេលបើក)',
+        adOn: 'ការពារពាណិជ្ជកម្ម៖ បើក', adOff: 'ការពារពាណិជ្ជកម្ម៖ បិទ',
+        fullscreen: 'ពេញអេក្រង់', reload: 'ផ្ទុកឡើងវិញ', closeGameTip: 'បិទហ្គេម និងបញ្ចេញអង្គចងចាំ',
+        note_rom: 'ត្រូវការឯកសារហ្គេមផ្ទាល់ខ្លួនរបស់អ្នក៖ {file}។', note_repaired: 'តំណដើមត្រូវបានកាត់ខ្លី ដូច្នេះកំពុងប្រើតំណជំនួស។',
+        note_default: 'អេក្រង់ទទេ? គេហទំព័រខ្លះមិនអនុញ្ញាតឱ្យបង្កប់ — សូមបើកក្នុងបង្អួចថ្មី។',
+        sysTitle: 'ពិនិត្យប្រព័ន្ធ', sysGpu: 'ក្រាហ្វិក', sysThreads: 'ពហុខ្សែស្រឡាយ', sysPad: 'ឧបករណ៍បញ្ជា', sysStorage: 'ទំហំផ្ទុកបានប្រើ',
+        val_checking: 'កំពុងពិនិត្យ…', val_ready: 'រួចរាល់', val_noAdapter: 'គ្មានអាដាប់ទ័រ', val_noWebgpu: 'មិនគាំទ្រ — សាក Chrome ឬ Edge',
+        val_threadsOn: 'មាន', val_threadsOff: 'បិទនៅទំព័រនេះ (ហ្គេមបើកវាក្នុងផ្ទាំងផ្ទាល់ខ្លួន)', val_noPad: 'មិនទាន់ភ្ជាប់ — ចុចប៊ូតុងណាមួយ', val_unknown: 'មិនស្គាល់',
+        tipsTitle: 'គន្លឹះ',
+        tip1: 'ប្រើ Chrome, Edge ឬ Brave សម្រាប់ហ្គេមដែលត្រូវការ WebGPU។',
+        tip2: 'ផ្ទាំងនីមួយៗអាចប្រើអង្គចងចាំហ្គេមប្រហែល ៤ GB។ សូមបិទហ្គេមមួយ មុនបើកហ្គេមធំ។',
+        tip3: 'គេហទំព័រហ្គេមខ្លះបង្ហាញពាណិជ្ជកម្មលោតឡើង។ សូមបិទវា ហើយត្រឡប់ទៅផ្ទាំងហ្គេមវិញ។',
+        fileTitle: 'ឧបករណ៍ពិនិត្យឯកសារហ្គេម',
+        fileDesc: 'ហ្គេមខ្លះត្រូវការឯកសារដែលអ្នកមាន (Halo .xiso, Half-Life .zip, Diablo DIABDAT.MPQ)។ ឧបករណ៍នេះពិនិត្យក្បាលឯកសារនៅលើឧបករណ៍របស់អ្នក — គ្មានអ្វីត្រូវបានផ្ទុកឡើងទេ។',
+        dropHere: 'ទម្លាក់ឯកសារនៅទីនេះ ឬចុចដើម្បីជ្រើសរើស', trySample: 'សាកល្បងគំរូ៖',
+        fileSize: 'ទំហំ', fileHeader: 'ក្បាលឯកសារ', fileOk: 'ស្គាល់ថាជា',
+        fileBad: 'មិនស្គាល់ឯកសារ។ សូមប្រាកដថាឯកសារមិននៅក្នុង .rar ឬ .7z។', launchGame: 'ចាប់ផ្ដើម {game}',
+        kind_mpq: 'ឯកសារទិន្នន័យ Diablo (MPQ)', kind_xiso: 'រូបភាពថាស Xbox (Halo)',
+        kind_isoExt: 'រូបភាពថាស — ផ្ទៀងផ្ទាត់តាមឈ្មោះឯកសារប៉ុណ្ណោះ', kind_zip: 'បណ្ណសារ ZIP/PAK (សម្រាប់ Half-Life / CS)',
+        storageTitle: 'ទំហំផ្ទុក', storageUsed: 'បានប្រើ {used} ក្នុងចំណោម {quota}', clearData: 'សម្អាតទិន្នន័យ', cleared: 'បានសម្អាតទិន្នន័យរបស់ទំព័រនេះ។',
+        storageNote: 'ការនេះសម្អាតតែទិន្នន័យដែលទំព័រនេះបានរក្សាទុកប៉ុណ្ណោះ។ គេហទំព័រហ្គេមនីមួយៗមានឃ្លាំងសម្ងាត់ផ្ទាល់ខ្លួន — សូមសម្អាតវានៅក្នុងការកំណត់កម្មវិធីរុករក។',
+        advancedMac: 'កម្រិតខ្ពស់៖ ពិនិត្យទំហំឃ្លាំងសម្ងាត់លើ macOS', copy: 'ចម្លង', copied: 'បានចម្លង',
+        footer: 'ហ្គេមទាំងនេះស្ថិតនៅលើគេហទំព័រភាគីទីបី។ តំណអាចផ្លាស់ប្ដូរ ឬឈប់ដំណើរការ។'
+      }
+    };
+
+    const CATEGORIES = [
+      { id: 'cod',    en: 'Call of Duty',        km: 'Call of Duty' },
+      { id: 'fps',    en: 'FPS classics',        km: 'FPS បុរាណ' },
+      { id: 'open',   en: 'Open world & action', km: 'ពិភពបើកចំហ និងសកម្មភាព' },
+      { id: 'sports', en: 'Sports & skate',      km: 'កីឡា និងស្គេត' },
+      { id: 'other',  en: 'Other classics',      km: 'ហ្គេមបុរាណផ្សេងៗ' }
+    ];
+    const STATUSES = ['all', 'ready', 'repaired', 'rom', 'favorites'];
+
+    /* ===================== GAME DATA ===================== */
+    // ramMb values are rough estimates carried over from the original list, not measurements.
+    const GAMES = [
+      { id: 1,  title: 'BO1 Zombies', cat: 'cod', tier: 'ready', engine: 'Wasm + WebGL2', ramMb: 1850,
+        mirrors: ['https://vel.gg/bo1z'],
+        en: 'Browser port with 10 maps and 4-player online co-op.', km: 'កំណែកម្មវិធីរុករក មាន ១០ ផែនទី និងលេងរួមគ្នាអនឡាញ ៤ នាក់។' },
+      { id: 2,  title: 'BO1 Moon', cat: 'cod', tier: 'ready', engine: 'Wasm', ramMb: 1200,
+        mirrors: ['https://moon-zombies.pages.dev'],
+        en: 'The Moon zombies survival map.', km: 'ផែនទីរស់រានមានជីវិតខ្មោចឆៅ Moon។' },
+      { id: 3,  title: 'BO1 Kino der Toten', cat: 'cod', tier: 'ready', engine: 'Wasm', ramMb: 1150,
+        mirrors: ['https://kino-der-toten.pages.dev'],
+        en: 'The Kino der Toten theater map.', km: 'ផែនទីរោងកុន Kino der Toten។' },
+      { id: 4,  title: 'Call of Duty: BO2', cat: 'cod', tier: 'ready', engine: 'WebGL remake', ramMb: 640,
+        mirrors: ['https://vibeslops.luckeysystems.com'],
+        en: 'Lightweight remake that loads fast.', km: 'កំណែថ្មីស្រាល ផ្ទុកបានលឿន។' },
+      { id: 5,  title: 'BO3 Cheese Cube', cat: 'cod', tier: 'ready', engine: 'Wasm', ramMb: 980,
+        mirrors: ['https://cheese-cube.pages.dev'],
+        en: 'Custom Cheese Cube challenge map.', km: 'ផែនទីប្រកួតប្រជែងផ្ទាល់ខ្លួន Cheese Cube។' },
+      { id: 6,  title: 'Call of Duty: MW2', cat: 'cod', tier: 'ready', engine: 'Wasm', ramMb: 1100,
+        mirrors: ['https://ovz-game-production.up.railway.app'],
+        en: 'Hosted on a temporary server; open in a new window if it stalls.', km: 'ដាក់លើម៉ាស៊ីនមេបណ្ដោះអាសន្ន បើវាគាំង សូមបើកក្នុងបង្អួចថ្មី។' },
+
+      { id: 7,  title: 'CS Surf', cat: 'fps', tier: 'ready', engine: 'Wasm', ramMb: 720,
+        mirrors: ['https://surfd.net'],
+        en: 'Counter-Strike surf physics in the browser.', km: 'រូបវិទ្យា surf របស់ Counter-Strike ក្នុងកម្មវិធីរុករក។' },
+      { id: 8,  title: 'Halo: Combat Evolved', cat: 'fps', tier: 'rom', engine: 'Wasm + WebGPU', ramMb: 2400, file: 'Halo.xiso',
+        mirrors: ['https://mitchellhynes.com/halo'],
+        en: 'Needs your own Halo .xiso disc image.', km: 'ត្រូវការរូបភាពថាស Halo .xiso ផ្ទាល់ខ្លួនរបស់អ្នក។' },
+      { id: 9,  title: 'Halo CE Mobile Web', cat: 'fps', tier: 'ready', engine: 'Web wrapper', ramMb: 950,
+        mirrors: ['https://hcemobile.com'],
+        en: 'Ready-to-play Halo, no disc image needed.', km: 'Halo ត្រៀមលេង មិនត្រូវការរូបភាពថាសទេ។' },
+      { id: 10, title: 'Half-Life', cat: 'fps', tier: 'ready', engine: 'Xash3D-FWGS', ramMb: 680,
+        mirrors: ['https://pixelsuft.github.io/hl/'],
+        en: 'Xash3D port with game files included.', km: 'កំណែ Xash3D មានឯកសារហ្គេមរួចស្រេច។' },
+      { id: 11, title: 'Half-Life / CS 1.6 (webXash)', cat: 'fps', tier: 'rom', engine: 'Xash3D-FWGS', ramMb: 750, file: 'valve.zip / cstrike.zip',
+        mirrors: ['https://x8bitrain.github.io/webXash/', 'https://pixelsuft.github.io/hl/'],
+        en: 'Needs your own valve or cstrike archive.', km: 'ត្រូវការបណ្ណសារ valve ឬ cstrike ផ្ទាល់ខ្លួនរបស់អ្នក។' },
+      { id: 12, title: 'Quake', cat: 'fps', tier: 'ready', engine: 'FTE QuakeWorld', ramMb: 420,
+        mirrors: ['https://q1.pieter.com'],
+        en: 'Fast FTE QuakeWorld port.', km: 'កំណែ FTE QuakeWorld លឿន។' },
+      { id: 13, title: 'Quake II', cat: 'fps', tier: 'ready', engine: 'id Tech 2', ramMb: 510,
+        mirrors: ['https://q2.pieter.com'],
+        en: 'id Tech 2 rendered with WebGL.', km: 'id Tech 2 បង្ហាញដោយ WebGL។' },
+      { id: 14, title: 'Quake III Arena', cat: 'fps', tier: 'ready', engine: 'ioquake3', ramMb: 620,
+        mirrors: ['https://q3.pieter.com'],
+        en: 'Classic ioquake3 arena shooter.', km: 'ហ្គេមបាញ់ប្រហារក្នុងសង្វៀន ioquake3 បុរាណ។' },
+      { id: 15, title: 'Return to Castle Wolfenstein', cat: 'fps', tier: 'ready', engine: 'iortcw', ramMb: 780,
+        mirrors: ['https://rtcw.pieter.com'],
+        en: 'Campaign and bot matches.', km: 'យុទ្ធនាការ និងការប្រកួតជាមួយបូត។' },
+      { id: 16, title: 'Unreal Tournament 99', cat: 'fps', tier: 'ready', engine: 'Unreal Engine 1', ramMb: 840,
+        mirrors: ['https://ut.pieter.com'],
+        en: 'Classic bot matches, including Facing Worlds.', km: 'ការប្រកួតជាមួយបូតបុរាណ រួមទាំង Facing Worlds។' },
+
+      { id: 17, title: 'Grand Theft Auto V', cat: 'open', tier: 'repaired', engine: 'Wasm + WebGPU', ramMb: 3600,
+        mirrors: ['https://wasmarcade.com/gta-5', 'https://gta.deloskiyt.pl'],
+        en: 'Very heavy (about 3.6 GB). Best opened in a new window.', km: 'ធ្ងន់ខ្លាំង (ប្រហែល ៣.៦ GB)។ គួរបើកក្នុងបង្អួចថ្មី។' },
+      { id: 18, title: 'GTA: Vice City (reVC)', cat: 'open', tier: 'repaired', engine: 'reVC + WebGL2', ramMb: 1350,
+        mirrors: ['https://wasmarcade.com/pc-games'],
+        en: 'reVC port, served from the WasmArcade game hub.', km: 'កំណែ reVC ពីមជ្ឈមណ្ឌលហ្គេម WasmArcade។' },
+      { id: 19, title: 'The Simpsons: Hit & Run', cat: 'open', tier: 'ready', engine: 'Wasm', ramMb: 1650,
+        mirrors: ['https://shar-wasm.cjoseph.workers.dev/?skipmovie'],
+        en: 'Full port that streams assets as you play.', km: 'កំណែពេញលេញ ផ្ទុកទិន្នន័យពេលកំពុងលេង។' },
+
+      { id: 20, title: 'Skate 3 (fan remake)', cat: 'sports', tier: 'ready', engine: 'Three.js', ramMb: 890,
+        mirrors: ['https://skate.aaddpp.lol'],
+        en: 'Online multiplayer with controller support.', km: 'លេងអនឡាញច្រើននាក់ និងគាំទ្រឧបករណ៍បញ្ជា។' },
+      { id: 21, title: 'Skate Rust', cat: 'sports', tier: 'ready', engine: 'Rust + Wasm', ramMb: 540,
+        mirrors: ['https://global-terror.net'],
+        en: 'Skate physics written in Rust.', km: 'រូបវិទ្យាស្គេតសរសេរដោយ Rust។' },
+      { id: 22, title: 'PES 6', cat: 'sports', tier: 'ready', engine: 'PPSSPP', ramMb: 1100, adShield: true,
+        mirrors: ['https://pes6.optijuegos.net'],
+        en: 'PSP emulator. Ad-Shield turns on automatically.', km: 'កម្មវិធីត្រាប់ PSP។ ការពារពាណិជ្ជកម្មបើកដោយស្វ័យប្រវត្តិ។' },
+
+      { id: 23, title: 'Diablo (DevilutionX)', cat: 'other', tier: 'ready', engine: 'DevilutionX', ramMb: 480,
+        mirrors: ['https://johnimril.github.io/diablo_web/'],
+        en: 'Shareware included; add DIABDAT.MPQ for the full game.', km: 'មានកំណែសាកល្បងស្រាប់ បន្ថែម DIABDAT.MPQ សម្រាប់ហ្គេមពេញ។' },
+      { id: 24, title: 'Hedgewars', cat: 'other', tier: 'ready', engine: 'SDL2 + WebGL', ramMb: 520,
+        mirrors: ['https://webwars.link'],
+        en: 'Worms-style turn-based artillery.', km: 'ហ្គេមបាញ់កាំភ្លើងធំតាមវេន ស្រដៀង Worms។' },
+      { id: 25, title: 'More GTA / Minecraft', cat: 'other', tier: 'repaired', engine: 'Eaglercraft + re3', ramMb: 1250,
+        mirrors: ['https://wasmarcade.com/pc-games'],
+        en: 'Hub with more GTA ports and Minecraft 1.8.8.', km: 'មជ្ឈមណ្ឌលមាន GTA ច្រើនទៀត និង Minecraft 1.8.8។' }
+    ];
+
+    /* ===================== COVERS ===================== */
+    // Steam app IDs for official store art of the original games (from memory, unverified).
+    // Fan ports and games not on Steam get the generated title card instead.
+    const STEAM = { 1: 42700, 2: 42700, 3: 42700, 4: 202970, 5: 311210, 6: 10180, 7: 240, 8: 976730, 9: 976730,
+      10: 70, 11: 10, 12: 2310, 13: 2320, 14: 2200, 15: 9010, 16: 13240, 17: 271590, 18: 12110 };
+    const STEAM_HOSTS = [
+      id => `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${id}/header.jpg`,
+      id => `https://cdn.cloudflare.steamstatic.com/steam/apps/${id}/header.jpg`
+    ];
+    const HUE = { cod: 38, fps: 8, open: 305, sports: 150, other: 262 };
+    const coverFailed = new Set();
+
+    function coverHtml(g, small = false) {
+      const steam = STEAM[g.id];
+      const img = steam && !coverFailed.has(g.id)
+        ? `<img src="${STEAM_HOSTS[0](steam)}" alt="" loading="lazy" data-gid="${g.id}" data-try="0" onerror="coverError(this)">`
+        : '';
+      return `<div class="cover ${small ? 'sm rounded-lg' : ''}" style="--h:${HUE[g.cat]}">
+          <div class="cover-fallback"><span class="ttl">${g.title}</span><span class="eng">${g.engine}</span></div>${img}
+        </div>`;
+    }
+
+    function coverError(img) {
+      const next = Number(img.dataset.try) + 1;
+      const id = Number(img.dataset.gid);
+      if (next < STEAM_HOSTS.length) { img.dataset.try = next; img.src = STEAM_HOSTS[next](STEAM[id]); }
+      else { coverFailed.add(id); img.remove(); }
+    }
+
+    /* ===================== STATE ===================== */
+    const LANG_KEY = 'wasmarcade_lang';
+    const FAV_KEY = 'wasmarcade_m1_favs';
+    let lang = 'en';
+    let statusFilter = 'all';
+    let catFilter = 'all';
+    let activeGame = null;
+    let currentUrl = null;
+    let adShield = false;
+    let favorites = [];
+    let lastFileResult = null;
+    let view = 'grid';
+    let expandedId = null;
+    const VIEW_KEY = 'wasmarcade_view';
+    try { view = localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'grid'; } catch (e) {}
+    const tel = { webgpu: null, gpu: null, threads: null, pad: null, storage: null };
+
+    lang = (navigator.language || '').startsWith('km') ? 'km' : 'en';
+    try { lang = localStorage.getItem(LANG_KEY) || lang; } catch (e) {}
+    try { favorites = JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch (e) { favorites = []; }
+
+    function t(key, vars = {}) {
+      const s = I18N[lang][key] ?? I18N.en[key] ?? key;
+      return s.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+    }
+    function num(n) {
+      const s = String(n);
+      return lang === 'km' ? s.replace(/\d/g, d => '០១២៣៤៥៦៧៨៩'[d]) : s;
+    }
+    function host(url) { return url.replace(/^https?:\/\//, '').replace(/\/$/, ''); }
+    function catName(id) { const c = CATEGORIES.find(c => c.id === id); return c ? c[lang] : id; }
+
+    /* ===================== LANGUAGE ===================== */
+    function setLang(l) {
+      lang = l;
+      try { localStorage.setItem(LANG_KEY, l); } catch (e) {}
+      document.documentElement.lang = l;
+      ['en', 'km'].forEach(code => {
+        document.getElementById('lang-' + code).className =
+          'px-2.5 py-1.5 transition ' + (code === l ? 'bg-ink-accent text-ink-bg font-semibold' : 'text-slate-300 hover:text-white');
+      });
+      document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+      document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+      document.querySelectorAll('[data-i18n-title]').forEach(el => {
+        el.title = t(el.dataset.i18nTitle);
+        el.setAttribute('aria-label', el.title);
+      });
+      renderStatusOptions();
+      renderCategories();
+      renderGrid();
+      renderTelemetry();
+      renderFileResult();
+    }
+
+    /* ===================== FILTERS & GRID ===================== */
+    function renderStatusOptions() {
+      const sel = document.getElementById('status');
+      sel.innerHTML = STATUSES.map(s => {
+        const n = s === 'all' ? GAMES.length : s === 'favorites' ? favorites.length : GAMES.filter(g => g.tier === s).length;
+        return `<option value="${s}" ${s === statusFilter ? 'selected' : ''}>${t('st_' + s)} (${num(n)})</option>`;
+      }).join('');
+    }
+
+    function renderCategories() {
+      const wrap = document.getElementById('cats');
+      const items = [{ id: 'all', label: t('cat_all') }, ...CATEGORIES.map(c => ({ id: c.id, label: c[lang] }))];
+      wrap.innerHTML = items.map(c =>
+        `<button class="chip" aria-pressed="${c.id === catFilter}" onclick="catFilter='${c.id}'; renderCategories(); renderGrid()">${c.label}</button>`
+      ).join('');
+    }
+
+    function toggleFavorite(e, id) {
+      e.stopPropagation();
+      const i = favorites.indexOf(id);
+      i > -1 ? favorites.splice(i, 1) : favorites.push(id);
+      try { localStorage.setItem(FAV_KEY, JSON.stringify(favorites)); } catch (err) {}
+      renderStatusOptions();
+      renderGrid();
+    }
+
+    const BADGE = {
+      ready:    'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
+      repaired: 'bg-sky-500/10 text-sky-300 border-sky-500/30',
+      rom:      'bg-amber-500/10 text-amber-300 border-amber-500/30'
+    };
+
+    function renderGrid() {
+      const q = document.getElementById('search').value.trim().toLowerCase();
+      const list = GAMES.filter(g => {
+        if (statusFilter === 'favorites' && !favorites.includes(g.id)) return false;
+        if (!['all', 'favorites'].includes(statusFilter) && g.tier !== statusFilter) return false;
+        if (catFilter !== 'all' && g.cat !== catFilter) return false;
+        if (q) return `${g.title} ${g.engine} ${g.en} ${g.km} ${catName(g.cat)} ${g.mirrors.join(' ')}`.toLowerCase().includes(q);
+        return true;
+      });
+
+      document.getElementById('count').textContent = t('showing', { n: num(list.length), total: num(GAMES.length) });
+      const grid = document.getElementById('grid');
+
+      if (!list.length) {
+        grid.innerHTML = `
+          <div class="col-span-full rounded-2xl border border-ink-line bg-ink-panel p-10 text-center">
+            <i class="fa-solid fa-magnifying-glass text-2xl text-slate-600 mb-3"></i>
+            <div class="text-white font-semibold">${t('emptyTitle')}</div>
+            <div class="text-sm text-ink-muted mt-1">${t('emptyBody')}</div>
+          </div>`;
+        return;
+      }
+
+      if (view === 'list') {
+        grid.className = 'flex flex-col rounded-2xl border border-ink-line bg-ink-panel divide-y divide-ink-line overflow-hidden';
+        grid.innerHTML = list.map(listRow).join('');
+      } else {
+        grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
+        grid.innerHTML = list.map(gridCard).join('');
+      }
+    }
+
+    function favButton(g, extra = '') {
+      const fav = favorites.includes(g.id);
+      return `<button onclick="toggleFavorite(event, ${g.id})" class="${extra} w-8 h-8 rounded-lg flex items-center justify-center transition" title="${t('fav')}" aria-label="${t('fav')}" aria-pressed="${fav}">
+          <i class="${fav ? 'fa-solid text-rose-400' : 'fa-regular text-slate-300'} fa-heart text-sm"></i></button>`;
+    }
+
+    function badge(g) {
+      return `<span class="px-2 py-0.5 rounded-md border text-xs whitespace-nowrap ${BADGE[g.tier]}">${t('badge_' + g.tier)}</span>`;
+    }
+
+    // Shared detail panel: shown when a card or row is expanded.
+    function details(g) {
+      const pct = Math.min(100, Math.round(g.ramMb / 4096 * 100));
+      return `
+        <div class="flex flex-col gap-4 min-w-0">
+          <p class="text-sm text-slate-200 km-tight">${g[lang]}</p>
+          <dl class="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-sm">
+            <dt class="text-ink-muted">${t('engineLabel')}</dt><dd class="text-slate-200 min-w-0">${g.engine}</dd>
+            <dt class="text-ink-muted">${t('memLabel')}</dt>
+            <dd class="min-w-0">
+              <div class="text-slate-200">${num((g.ramMb / 1024).toFixed(1))} GB <span class="text-ink-muted text-xs">${t('memOf')}</span></div>
+              <div class="mt-1 h-1.5 rounded-full bg-ink-bg overflow-hidden max-w-xs"><div class="h-full rounded-full ${g.ramMb > 2500 ? 'bg-amber-400' : 'bg-ink-accent'}" style="width:${pct}%"></div></div>
+            </dd>
+            <dt class="text-ink-muted">${t('servers')}</dt>
+            <dd class="min-w-0 flex flex-col gap-0.5">${g.mirrors.map((u, i) =>
+              `<a href="${u}" target="_blank" rel="noopener" class="text-sky-300 hover:underline break-all">${host(u)}</a>`).join('')}</dd>
+          </dl>
+          <div class="flex flex-wrap gap-2">
+            <a href="${g.mirrors[0]}" target="_blank" rel="noopener" class="h-10 px-5 rounded-lg bg-ink-accent text-ink-bg hover:brightness-110 font-semibold text-sm inline-flex items-center gap-2">
+              <i class="fa-solid fa-play text-xs"></i>${t('play')}</a>
+            ${g.mirrors[1] ? `<a href="${g.mirrors[1]}" target="_blank" rel="noopener" class="h-10 px-4 rounded-lg border border-ink-line hover:border-ink-accent/50 text-sm text-slate-200 inline-flex items-center gap-2">
+              <i class="fa-solid fa-server text-xs"></i>${t('altServer')}</a>` : ''}
+            ${g.tier === 'rom' ? `<button onclick="openModal('fileModal')" class="h-10 px-4 rounded-lg border border-amber-500/40 text-amber-300 hover:bg-amber-500/10 text-sm inline-flex items-center gap-2">
+              <i class="fa-solid fa-file-circle-check text-xs"></i>${t('checkFile')}</button>` : ''}
+          </div>
+        </div>`;
+    }
+
+    function gridCard(g) {
+      const open = expandedId === g.id;
+      if (open) {
+        return `
+          <article id="game-${g.id}" class="card col-span-full rounded-2xl bg-ink-panel border border-ink-accent/60 overflow-hidden">
+            <div class="grid md:grid-cols-[minmax(0,2fr),minmax(0,3fr)]">
+              <div class="relative">
+                ${coverHtml(g)}
+                ${favButton(g, 'absolute top-2 right-2 bg-black/50 hover:bg-black/70 backdrop-blur')}
+              </div>
+              <div class="p-5 flex flex-col gap-4 min-w-0">
+                <button onclick="toggleExpand(${g.id})" aria-expanded="true" class="flex items-start justify-between gap-3 text-left">
+                  <span class="min-w-0">
+                    <span class="block text-lg font-bold text-white">${g.title}</span>
+                    <span class="flex flex-wrap items-center gap-2 mt-1 text-xs text-ink-muted">${catName(g.cat)} ${badge(g)}</span>
+                  </span>
+                  <span class="shrink-0 text-ink-muted hover:text-white text-xs inline-flex items-center gap-1.5 mt-1">${t('hideDetails')}<i class="chev fa-solid fa-chevron-down"></i></span>
+                </button>
+                ${details(g)}
+              </div>
+            </div>
+          </article>`;
+      }
+      return `
+        <article id="game-${g.id}" class="card relative rounded-2xl bg-ink-panel border border-ink-line hover:border-slate-500 overflow-hidden transition">
+          <button onclick="toggleExpand(${g.id})" aria-expanded="false" class="block w-full text-left" title="${t('showDetails')}">
+            ${coverHtml(g)}
+            <span class="flex items-center justify-between gap-2 px-3.5 py-3">
+              <span class="min-w-0">
+                <span class="block font-semibold text-white truncate">${g.title}</span>
+                <span class="block text-xs text-ink-muted truncate">${catName(g.cat)}</span>
+              </span>
+              <span class="flex items-center gap-2 shrink-0">${badge(g)}<i class="chev fa-solid fa-chevron-down text-xs text-ink-muted"></i></span>
+            </span>
+          </button>
+          ${favButton(g, 'absolute top-2 right-2 bg-black/50 hover:bg-black/70 backdrop-blur')}
+        </article>`;
+    }
+
+    function listRow(g) {
+      const open = expandedId === g.id;
+      return `
+        <div id="game-${g.id}" class="${open ? 'bg-ink-raise/60' : ''}">
+          <div class="flex items-center gap-2 pr-2">
+            <button onclick="toggleExpand(${g.id})" aria-expanded="${open}" class="flex-1 min-w-0 flex items-center gap-3 sm:gap-4 p-2.5 text-left hover:bg-ink-raise/50 transition" title="${open ? t('hideDetails') : t('showDetails')}">
+              <span class="w-24 sm:w-32 shrink-0">${coverHtml(g, true)}</span>
+              <span class="flex-1 min-w-0">
+                <span class="block font-semibold text-white truncate">${g.title}</span>
+                <span class="block text-xs text-ink-muted truncate">${catName(g.cat)} · ${g.engine}</span>
+              </span>
+              <span class="hidden sm:block">${badge(g)}</span>
+              <i class="chev fa-solid fa-chevron-down text-xs text-ink-muted px-1"></i>
+            </button>
+            ${favButton(g, 'shrink-0 hover:bg-ink-raise')}
+          </div>
+          ${open ? `<div class="px-4 pb-5 pt-1 sm:pl-[10.5rem]"><div class="sm:hidden mb-3">${badge(g)}</div>${details(g)}</div>` : ''}
+        </div>`;
+    }
+
+    function toggleExpand(id) {
+      expandedId = expandedId === id ? null : id;
+      renderGrid();
+      if (expandedId !== null) {
+        const el = document.getElementById('game-' + id);
+        if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
+        const btn = el && el.querySelector('[aria-expanded]');
+        if (btn) btn.focus({ preventScroll: true });
+      }
+    }
+
+    function setView(v) {
+      view = v;
+      try { localStorage.setItem(VIEW_KEY, v); } catch (e) {}
+      ['grid', 'list'].forEach(k => document.getElementById('view-' + k).setAttribute('aria-pressed', k === v));
+      renderGrid();
+    }
+
+    /* ===================== TELEMETRY ===================== */
+    async function initTelemetry() {
+      try {
+        if ('gpu' in navigator) {
+          const adapter = await navigator.gpu.requestAdapter();
+          tel.webgpu = adapter ? 'ok' : 'noAdapter';
+        } else tel.webgpu = 'no';
+      } catch (e) { tel.webgpu = 'noAdapter'; }
+
+      try {
+        const gl = document.createElement('canvas').getContext('webgl2') || document.createElement('canvas').getContext('webgl');
+        if (gl) {
+          const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+          const raw = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+          let clean = String(raw).replace(/ANGLE \((.+)\)/, '$1');
+          const m = clean.match(/Apple M[0-9A-Za-z ]*/);
+          tel.gpu = (m ? m[0] : clean).trim();
+        }
+      } catch (e) {}
+
+      tel.threads = window.crossOriginIsolated && typeof SharedArrayBuffer !== 'undefined';
+      renderTelemetry();
+      updateStorage();
+
+      window.addEventListener('gamepadconnected', pollGamepad);
+      window.addEventListener('gamepaddisconnected', pollGamepad);
+      setInterval(pollGamepad, 1000);
+    }
+
+    function pollGamepad() {
+      try {
+        const pads = navigator.getGamepads ? Array.from(navigator.getGamepads()).filter(Boolean) : [];
+        tel.pad = pads.length ? pads[0].id.split('(')[0].trim() || 'Gamepad' : null;
+      } catch (e) { tel.pad = null; }
+      renderTelemetry();
+    }
+
+    function renderTelemetry() {
+      const set = (id, text, cls) => { const el = document.getElementById(id); el.textContent = text; el.className = el.className.replace(/\btext-(emerald|amber|slate)-\d+\b/g, '') + ' ' + cls; };
+      const wg = tel.webgpu;
+      set('sys-webgpu', wg === null ? t('val_checking') : wg === 'ok' ? t('val_ready') : wg === 'noAdapter' ? t('val_noAdapter') : t('val_noWebgpu'),
+        wg === 'ok' ? 'text-emerald-300' : wg === null ? 'text-slate-400' : 'text-amber-300');
+      set('sys-gpu', tel.gpu || t('val_unknown'), 'text-slate-200');
+      document.getElementById('sys-gpu').title = tel.gpu || '';
+      set('sys-threads', tel.threads === null ? t('val_checking') : tel.threads ? t('val_threadsOn') : t('val_threadsOff'),
+        tel.threads ? 'text-emerald-300' : 'text-amber-300');
+      set('sys-pad', tel.pad || t('val_noPad'), tel.pad ? 'text-emerald-300' : 'text-slate-400');
+      set('sys-storage', tel.storage ? `${num(tel.storage.usedMb)} MB` : t('val_unknown'), 'text-slate-200');
+      document.getElementById('sys-dot').className = 'w-2 h-2 rounded-full ' +
+        (wg === null ? 'bg-slate-500' : wg === 'ok' ? 'bg-emerald-400' : 'bg-amber-400');
+    }
+
+    async function updateStorage() {
+      try {
+        if (navigator.storage && navigator.storage.estimate) {
+          const est = await navigator.storage.estimate();
+          tel.storage = {
+            usedMb: ((est.usage || 0) / 1048576).toFixed(1),
+            quotaGb: ((est.quota || 0) / 1073741824).toFixed(1)
+          };
+        }
+      } catch (e) { tel.storage = null; }
+      document.getElementById('storage-used').textContent = tel.storage
+        ? t('storageUsed', { used: num(tel.storage.usedMb) + ' MB', quota: num(tel.storage.quotaGb) + ' GB' })
+        : t('val_unknown');
+      renderTelemetry();
+    }
+
+    async function clearHubData() {
+      try {
+        if ('caches' in window) { const keys = await caches.keys(); await Promise.all(keys.map(k => caches.delete(k))); }
+        if (window.indexedDB && indexedDB.databases) { (await indexedDB.databases()).forEach(db => db.name && indexedDB.deleteDatabase(db.name)); }
+      } catch (e) {}
+      document.getElementById('storage-feedback').classList.remove('hidden');
+      updateStorage();
+    }
+
+    async function copyCmd() {
+      const cmd = document.getElementById('mac-cmd').textContent;
+      try { await navigator.clipboard.writeText(cmd); }
+      catch (e) {
+        const ta = document.createElement('textarea'); ta.value = cmd; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy'); ta.remove();
+      }
+      const label = document.getElementById('copy-label');
+      label.textContent = t('copied');
+      setTimeout(() => { label.textContent = t('copy'); }, 1800);
+    }
+
+    /* ===================== FILE CHECKER ===================== */
+    const XISO_OFFSET = 0x10000;
+    const XISO_SIG = 'MICROSOFT*XBOX*MEDIA';
+
+    async function handleFile(file) {
+      if (!file) return;
+      try {
+        const bytes = new Uint8Array(await file.slice(0, XISO_OFFSET + XISO_SIG.length).arrayBuffer());
+        const hex = Array.from(bytes.slice(0, 8)).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+        const ascii = Array.from(bytes.slice(0, 4)).map(b => (b >= 32 && b <= 126 ? String.fromCharCode(b) : '.')).join('');
+        const name = file.name.toLowerCase();
+        const xiso = bytes.length >= XISO_OFFSET + XISO_SIG.length &&
+          new TextDecoder().decode(bytes.slice(XISO_OFFSET, XISO_OFFSET + XISO_SIG.length)) === XISO_SIG;
+
+        let kind = null, gameId = null;
+        if (bytes[0] === 0x4D && bytes[1] === 0x50 && bytes[2] === 0x51 && bytes[3] === 0x1A) { kind = 'mpq'; gameId = 23; }
+        else if (xiso) { kind = 'xiso'; gameId = 8; }
+        else if (name.endsWith('.xiso') || name.endsWith('.iso')) { kind = 'isoExt'; gameId = 8; }
+        else if ((bytes[0] === 0x50 && bytes[1] === 0x4B && bytes[2] === 0x03 && bytes[3] === 0x04) || ['PACK', 'WAD2', 'WAD3'].includes(ascii)) { kind = 'zip'; gameId = 11; }
+
+        lastFileResult = { name: file.name, sizeMb: (file.size / 1048576).toFixed(2), hex, ascii, kind, gameId };
+      } catch (err) {
+        lastFileResult = { error: err.message };
+      }
+      renderFileResult();
+    }
+
+    function renderFileResult() {
+      const box = document.getElementById('file-result');
+      const r = lastFileResult;
+      if (!r) { box.classList.add('hidden'); return; }
+      box.classList.remove('hidden');
+      if (r.error) { box.innerHTML = `<div class="text-ink-danger">${r.error}</div>`; return; }
+      const g = r.gameId ? GAMES.find(x => x.id === r.gameId) : null;
+      box.innerHTML = `
+        <div class="flex justify-between gap-3"><span class="text-white font-medium truncate">${r.name}</span><span class="text-ink-muted shrink-0">${num(r.sizeMb)} MB</span></div>
+        <div class="text-xs text-ink-muted">${t('fileHeader')}: <code class="font-mono text-slate-300">${r.hex}</code></div>
+        ${r.kind
+          ? `<div class="${r.kind === 'isoExt' ? 'text-amber-300' : 'text-emerald-300'}"><i class="fa-solid ${r.kind === 'isoExt' ? 'fa-circle-exclamation' : 'fa-circle-check'} mr-1.5"></i>${t('fileOk')}: ${t('kind_' + r.kind)}</div>`
+          : `<div class="text-amber-300"><i class="fa-solid fa-circle-exclamation mr-1.5"></i>${t('fileBad')}</div>`}
+        ${g ? `<a href="${g.mirrors[0]}" target="_blank" rel="noopener" class="mt-1 h-9 px-4 rounded-lg bg-ink-accent text-ink-bg font-semibold inline-flex items-center">${t('launchGame', { game: g.title })}</a>` : ''}`;
+    }
+
+    function sampleFile(name) {
+      let bytes;
+      if (name === 'Halo.xiso') {
+        bytes = new Uint8Array(XISO_OFFSET + XISO_SIG.length);
+        bytes.set(new TextEncoder().encode(XISO_SIG), XISO_OFFSET);
+      } else {
+        bytes = new Uint8Array(64);
+        bytes.set(name === 'DIABDAT.MPQ' ? [0x4D, 0x50, 0x51, 0x1A, 0x20, 0, 0, 0] : [0x50, 0x4B, 0x03, 0x04, 0x14, 0, 0, 0]);
+      }
+      handleFile(new File([bytes], name));
+    }
+
+    const dz = document.getElementById('dropzone');
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('!border-ink-accent'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('!border-ink-accent'));
+    dz.addEventListener('drop', e => {
+      e.preventDefault(); dz.classList.remove('!border-ink-accent');
+      if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+    });
+
+    /* ===================== MODALS ===================== */
+    function openModal(id) {
+      const m = document.getElementById(id);
+      m.classList.remove('hidden'); m.classList.add('flex');
+      if (id === 'storageModal') { document.getElementById('storage-feedback').classList.add('hidden'); updateStorage(); }
+    }
+    function closeModal(id) {
+      const m = document.getElementById(id);
+      m.classList.add('hidden'); m.classList.remove('flex');
+    }
+    document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); }));
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') document.querySelectorAll('.modal.flex').forEach(m => closeModal(m.id));
+    });
+
+    /* ===================== INIT ===================== */
+    setView(view);
+    setLang(lang === 'km' ? 'km' : 'en');
+    initTelemetry();
+  </script>
+
+
+</html>
