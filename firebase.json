@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "playgame3d",
+    "site": "playgamefree",
     "public": "public",
     "ignore": [
       "firebase.json",
