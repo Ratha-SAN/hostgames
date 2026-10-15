@@ -220,7 +220,7 @@
     /* ===================== I18N ===================== */
     const I18N = {
       en: {
-        tagline: '28 classic games, right in your browser', opensInTab: 'Each game opens in a new tab.', altServer: 'Alternate server', langLabel: 'Language', viewGrid: 'Grid view', viewList: 'List view', showDetails: 'Show details', hideDetails: 'Hide details', servers: 'Servers', engineLabel: 'Engine', memLabel: 'Memory (estimate)', memOf: 'of the 4 GB tab limit', coverCredit: 'Covers load from Steam, libretro and Wikipedia when available.', primary: 'Main',
+        tagline: '36 games, right in your browser', opensInTab: 'Each game opens in a new tab.', altServer: 'Alternate server', langLabel: 'Language', viewGrid: 'Grid view', viewList: 'List view', showDetails: 'Show details', hideDetails: 'Hide details', servers: 'Servers', engineLabel: 'Engine', memLabel: 'Memory (estimate)', memOf: 'of the 4 GB tab limit', coverCredit: 'Covers load from Steam, libretro and Wikipedia when available.', primary: 'Main',
         system: 'System', fileChecker: 'File checker', storage: 'Storage', close: 'Close',
         library: 'Game library', searchPh: 'Search games or engines…',
         st_all: 'All games', st_ready: 'Ready to play', st_repaired: 'Fixed links', st_rom: 'Needs your file', st_favorites: 'Favorites',
@@ -256,7 +256,7 @@
         footer: 'Games are hosted on third-party sites. Links may change or stop working.'
       },
       km: {
-        tagline: 'ហ្គេមបុរាណ ២៨ លេងផ្ទាល់ក្នុងកម្មវិធីរុករក', opensInTab: 'ហ្គេមនីមួយៗបើកក្នុងផ្ទាំងថ្មី។', altServer: 'ម៉ាស៊ីនមេជំនួស', langLabel: 'ភាសា', viewGrid: 'ទិដ្ឋភាពក្រឡា', viewList: 'ទិដ្ឋភាពបញ្ជី', showDetails: 'បង្ហាញព័ត៌មានលម្អិត', hideDetails: 'លាក់ព័ត៌មានលម្អិត', servers: 'ម៉ាស៊ីនមេ', engineLabel: 'ម៉ាស៊ីនហ្គេម', memLabel: 'អង្គចងចាំ (ប៉ាន់ស្មាន)', memOf: 'ក្នុងចំណោមដែនកំណត់ ៤ GB របស់ផ្ទាំង', coverCredit: 'រូបក្របផ្ទុកពី Steam, libretro និង Wikipedia នៅពេលមាន។', primary: 'មេ',
+        tagline: 'ហ្គេម ៣៦ លេងផ្ទាល់ក្នុងកម្មវិធីរុករក', opensInTab: 'ហ្គេមនីមួយៗបើកក្នុងផ្ទាំងថ្មី។', altServer: 'ម៉ាស៊ីនមេជំនួស', langLabel: 'ភាសា', viewGrid: 'ទិដ្ឋភាពក្រឡា', viewList: 'ទិដ្ឋភាពបញ្ជី', showDetails: 'បង្ហាញព័ត៌មានលម្អិត', hideDetails: 'លាក់ព័ត៌មានលម្អិត', servers: 'ម៉ាស៊ីនមេ', engineLabel: 'ម៉ាស៊ីនហ្គេម', memLabel: 'អង្គចងចាំ (ប៉ាន់ស្មាន)', memOf: 'ក្នុងចំណោមដែនកំណត់ ៤ GB របស់ផ្ទាំង', coverCredit: 'រូបក្របផ្ទុកពី Steam, libretro និង Wikipedia នៅពេលមាន។', primary: 'មេ',
         system: 'ប្រព័ន្ធ', fileChecker: 'ពិនិត្យឯកសារ', storage: 'ទំហំផ្ទុក', close: 'បិទ',
         library: 'បណ្ណាល័យហ្គេម', searchPh: 'ស្វែងរកហ្គេម ឬម៉ាស៊ីនហ្គេម…',
         st_all: 'ហ្គេមទាំងអស់', st_ready: 'លេងបានភ្លាម', st_repaired: 'តំណបានជួសជុល', st_rom: 'ត្រូវការឯកសាររបស់អ្នក', st_favorites: 'ចំណូលចិត្ត',
@@ -298,7 +298,8 @@
       { id: 'fps',    en: 'FPS classics',        km: 'FPS បុរាណ' },
       { id: 'open',   en: 'Open world & action', km: 'ពិភពបើកចំហ និងសកម្មភាព' },
       { id: 'sports', en: 'Sports & skate',      km: 'កីឡា និងស្គេត' },
-      { id: 'other',  en: 'Other classics',      km: 'ហ្គេមបុរាណផ្សេងៗ' }
+      { id: 'other',  en: 'Other classics',      km: 'ហ្គេមបុរាណផ្សេងៗ' },
+      { id: 'web',    en: 'Free web games',      km: 'ហ្គេមវេបឥតគិតថ្លៃ' }
     ];
     const STATUSES = ['all', 'ready', 'repaired', 'rom', 'favorites'];
 
@@ -392,7 +393,31 @@
         en: 'Free demo world; load your own Morrowind files for the full game. Works best in desktop Chrome.', km: 'ពិភពសាកល្បងឥតគិតថ្លៃ ផ្ទុកឯកសារ Morrowind របស់អ្នកសម្រាប់ហ្គេមពេញ។ ដំណើរការល្អបំផុតលើ Chrome កុំព្យូទ័រ។' },
       { id: 28, title: 'Commander Keen', cat: 'other', tier: 'ready', engine: 'Chocolate Keen', ramMb: 120,
         mirrors: ['https://www.jamesfmackenzie.com/chocolatekeen/'],
-        en: 'Classic Keen platformer on a faithful reverse-engineered engine. Desktop only.', km: 'ហ្គេមលោតបុរាណ Keen លើម៉ាស៊ីនដែលចម្លងតាមដើមយ៉ាងស្មោះត្រង់។ សម្រាប់កុំព្យូទ័រប៉ុណ្ណោះ។' }
+        en: 'Classic Keen platformer on a faithful reverse-engineered engine. Desktop only.', km: 'ហ្គេមលោតបុរាណ Keen លើម៉ាស៊ីនដែលចម្លងតាមដើមយ៉ាងស្មោះត្រង់។ សម្រាប់កុំព្យូទ័រប៉ុណ្ណោះ។' },
+      { id: 29, title: 'Krunker', cat: 'web', tier: 'ready', engine: 'WebGL', ramMb: 600,
+        mirrors: ['https://krunker.io/'],
+        en: 'Fast online FPS. Free, with ads.', km: 'ហ្គេមបាញ់ FPS អនឡាញលឿន។ ឥតគិតថ្លៃ មានពាណិជ្ជកម្ម។' },
+      { id: 30, title: 'Slither.io', cat: 'web', tier: 'ready', engine: 'HTML5', ramMb: 250,
+        mirrors: ['https://slither.io/'],
+        en: 'Grow your snake and outlast other players. Free, with ads.', km: 'ពង្រីកពស់របស់អ្នក ហើយរស់រានជាងអ្នកលេងផ្សេង។ ឥតគិតថ្លៃ មានពាណិជ្ជកម្ម។' },
+      { id: 31, title: 'Agar.io', cat: 'web', tier: 'ready', engine: 'HTML5', ramMb: 250,
+        mirrors: ['https://agar.io/'],
+        en: 'Eat smaller cells and avoid bigger ones. Free, with ads.', km: 'ស៊ីកោសិកាតូចៗ ហើយគេចពីកោសិកាធំៗ។ ឥតគិតថ្លៃ មានពាណិជ្ជកម្ម។' },
+      { id: 32, title: 'Diep.io', cat: 'web', tier: 'ready', engine: 'HTML5', ramMb: 250,
+        mirrors: ['https://diep.io/'],
+        en: 'Upgrade your tank in big online battles. Free, with ads.', km: 'ធ្វើឱ្យរថក្រោះរបស់អ្នកខ្លាំងឡើងក្នុងសមរភូមិអនឡាញ។ ឥតគិតថ្លៃ មានពាណិជ្ជកម្ម។' },
+      { id: 33, title: 'Lichess', cat: 'web', tier: 'ready', engine: 'Web app', ramMb: 200,
+        mirrors: ['https://lichess.org/'],
+        en: 'Chess against people or the computer. Free, open source, no ads.', km: 'អុកជាមួយមនុស្ស ឬកុំព្យូទ័រ។ ឥតគិតថ្លៃ កូដបើកចំហ គ្មានពាណិជ្ជកម្ម។' },
+      { id: 34, title: '2048', cat: 'web', tier: 'ready', engine: 'HTML5', ramMb: 80,
+        mirrors: ['https://play2048.co/'],
+        en: 'Slide the tiles to reach 2048.', km: 'រុញក្រឡាលេខដើម្បីឱ្យដល់ 2048។' },
+      { id: 35, title: 'Hextris', cat: 'web', tier: 'ready', engine: 'HTML5', ramMb: 80,
+        mirrors: ['https://hextris.io/'],
+        en: 'Fast hexagon puzzle inspired by Tetris. Open source.', km: 'ល្បែងផ្គុំរូបឆកោណលឿន បំផុសគំនិតពី Tetris។ កូដបើកចំហ។' },
+      { id: 36, title: 'A Dark Room', cat: 'web', tier: 'ready', engine: 'HTML5', ramMb: 60,
+        mirrors: ['https://adarkroom.doublespeakgames.com/'],
+        en: 'Minimalist text adventure that slowly grows.', km: 'ហ្គេមផ្សងព្រេងជាអក្សរសាមញ្ញ ដែលរីកធំឡើងបន្តិចម្ដងៗ។' }
     ];
 
     /* ===================== COVERS ===================== */
@@ -426,9 +451,10 @@
       13: 'Quake II', 14: 'Quake III Arena', 15: 'Return to Castle Wolfenstein', 16: 'Unreal Tournament',
       17: 'Grand Theft Auto V', 18: 'Grand Theft Auto: Vice City', 19: 'The Simpsons: Hit & Run',
       20: 'Skate 3', 22: 'Pro Evolution Soccer 6', 23: 'Diablo (video game)', 24: 'Hedgewars', 25: 'Minecraft',
-      26: 'Doom (1993 video game)', 27: 'The Elder Scrolls III: Morrowind', 28: 'Commander Keen in Invasion of the Vorticons'
+      26: 'Doom (1993 video game)', 27: 'The Elder Scrolls III: Morrowind', 28: 'Commander Keen in Invasion of the Vorticons',
+      29: 'Krunker', 30: 'Slither.io', 31: 'Agar.io', 32: 'Diep.io', 33: 'Lichess', 34: '2048 (video game)', 36: 'A Dark Room'
     };
-    const HUE = { cod: 38, fps: 8, open: 305, sports: 150, other: 262 };
+    const HUE = { cod: 38, fps: 8, open: 305, sports: 150, other: 262, web: 195 };
     const COVER_KEY = 'wasmarcade_covers_v1';
     let coverOk = {};
     try { coverOk = JSON.parse(localStorage.getItem(COVER_KEY) || '{}'); } catch (e) { coverOk = {}; }
