@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="km" class="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -512,7 +512,8 @@
     }
 
     /* ===================== STATE ===================== */
-    const LANG_KEY = 'wasmarcade_lang';
+    // v2: earlier builds saved English on every first load, so that old value is ignored.
+    const LANG_KEY = 'wasmarcade_lang_v2';
     const FAV_KEY = 'wasmarcade_m1_favs';
     let lang = 'en';
     let statusFilter = 'all';
@@ -544,9 +545,9 @@
     function catName(id) { const c = CATEGORIES.find(c => c.id === id); return c ? c[lang] : id; }
 
     /* ===================== LANGUAGE ===================== */
-    function setLang(l) {
+    function setLang(l, remember = true) {
       lang = l;
-      try { localStorage.setItem(LANG_KEY, l); } catch (e) {}
+      if (remember) { try { localStorage.setItem(LANG_KEY, l); } catch (e) {} }
       document.documentElement.lang = l;
       ['en', 'km'].forEach(code => {
         document.getElementById('lang-' + code).className =
@@ -914,7 +915,7 @@
 
     /* ===================== INIT ===================== */
     setView(view);
-    setLang(lang === 'km' ? 'km' : 'en');
+    setLang(lang === 'en' ? 'en' : 'km', false);
     initTelemetry();
   </script>
 
