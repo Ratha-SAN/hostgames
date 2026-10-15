@@ -48,7 +48,11 @@
     .chip[aria-pressed="true"] { background: #2dd4bf; color: #0c0f15; border-color: #2dd4bf; font-weight: 600; }
     /* Covers: Steam header art is 460x215; the fallback is a designed title card. */
     .cover { position: relative; overflow: hidden; aspect-ratio: 460 / 215; max-width: 100%; background: #131823; }
-    .cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .cover { isolation: isolate; }
+    .cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; }
+    .cover.fit::before { content: ''; position: absolute; inset: -16px; z-index: 1;
+      background: var(--img) center / cover; filter: blur(16px) brightness(.55); }
+    .cover.fit img { object-fit: contain; }
     .cover-fallback { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: .15rem;
       padding: .75rem .9rem; color: #f8fafc;
       background:
@@ -216,7 +220,7 @@
     /* ===================== I18N ===================== */
     const I18N = {
       en: {
-        tagline: '25 classic games, right in your browser', opensInTab: 'Each game opens in a new tab.', altServer: 'Alternate server', langLabel: 'Language', viewGrid: 'Grid view', viewList: 'List view', showDetails: 'Show details', hideDetails: 'Hide details', servers: 'Servers', engineLabel: 'Engine', memLabel: 'Memory (estimate)', memOf: 'of the 4 GB tab limit', coverCredit: 'Cover art loads from Steam when available.', primary: 'Main',
+        tagline: '25 classic games, right in your browser', opensInTab: 'Each game opens in a new tab.', altServer: 'Alternate server', langLabel: 'Language', viewGrid: 'Grid view', viewList: 'List view', showDetails: 'Show details', hideDetails: 'Hide details', servers: 'Servers', engineLabel: 'Engine', memLabel: 'Memory (estimate)', memOf: 'of the 4 GB tab limit', coverCredit: 'Covers load from Steam, libretro and Wikipedia when available.', primary: 'Main',
         system: 'System', fileChecker: 'File checker', storage: 'Storage', close: 'Close',
         library: 'Game library', searchPh: 'Search games or engines…',
         st_all: 'All games', st_ready: 'Ready to play', st_repaired: 'Fixed links', st_rom: 'Needs your file', st_favorites: 'Favorites',
@@ -252,7 +256,7 @@
         footer: 'Games are hosted on third-party sites. Links may change or stop working.'
       },
       km: {
-        tagline: 'ហ្គេមបុរាណ ២៥ លេងផ្ទាល់ក្នុងកម្មវិធីរុករក', opensInTab: 'ហ្គេមនីមួយៗបើកក្នុងផ្ទាំងថ្មី។', altServer: 'ម៉ាស៊ីនមេជំនួស', langLabel: 'ភាសា', viewGrid: 'ទិដ្ឋភាពក្រឡា', viewList: 'ទិដ្ឋភាពបញ្ជី', showDetails: 'បង្ហាញព័ត៌មានលម្អិត', hideDetails: 'លាក់ព័ត៌មានលម្អិត', servers: 'ម៉ាស៊ីនមេ', engineLabel: 'ម៉ាស៊ីនហ្គេម', memLabel: 'អង្គចងចាំ (ប៉ាន់ស្មាន)', memOf: 'ក្នុងចំណោមដែនកំណត់ ៤ GB របស់ផ្ទាំង', coverCredit: 'រូបក្របផ្ទុកពី Steam នៅពេលមាន។', primary: 'មេ',
+        tagline: 'ហ្គេមបុរាណ ២៥ លេងផ្ទាល់ក្នុងកម្មវិធីរុករក', opensInTab: 'ហ្គេមនីមួយៗបើកក្នុងផ្ទាំងថ្មី។', altServer: 'ម៉ាស៊ីនមេជំនួស', langLabel: 'ភាសា', viewGrid: 'ទិដ្ឋភាពក្រឡា', viewList: 'ទិដ្ឋភាពបញ្ជី', showDetails: 'បង្ហាញព័ត៌មានលម្អិត', hideDetails: 'លាក់ព័ត៌មានលម្អិត', servers: 'ម៉ាស៊ីនមេ', engineLabel: 'ម៉ាស៊ីនហ្គេម', memLabel: 'អង្គចងចាំ (ប៉ាន់ស្មាន)', memOf: 'ក្នុងចំណោមដែនកំណត់ ៤ GB របស់ផ្ទាំង', coverCredit: 'រូបក្របផ្ទុកពី Steam, libretro និង Wikipedia នៅពេលមាន។', primary: 'មេ',
         system: 'ប្រព័ន្ធ', fileChecker: 'ពិនិត្យឯកសារ', storage: 'ទំហំផ្ទុក', close: 'បិទ',
         library: 'បណ្ណាល័យហ្គេម', searchPh: 'ស្វែងរកហ្គេម ឬម៉ាស៊ីនហ្គេម…',
         st_all: 'ហ្គេមទាំងអស់', st_ready: 'លេងបានភ្លាម', st_repaired: 'តំណបានជួសជុល', st_rom: 'ត្រូវការឯកសាររបស់អ្នក', st_favorites: 'ចំណូលចិត្ត',
@@ -383,32 +387,117 @@
     ];
 
     /* ===================== COVERS ===================== */
-    // Steam app IDs for official store art of the original games (from memory, unverified).
-    // Fan ports and games not on Steam get the generated title card instead.
+    // Each game tries its sources in order, in the visitor's browser: Steam store art,
+    // then libretro box art, then the lead image of its Wikipedia article.
+    // IDs, file names and article titles are from memory and unverified; a miss just
+    // falls through to the next source and finally to the generated title card.
     const STEAM = { 1: 42700, 2: 42700, 3: 42700, 4: 202970, 5: 311210, 6: 10180, 7: 240, 8: 976730, 9: 976730,
       10: 70, 11: 10, 12: 2310, 13: 2320, 14: 2200, 15: 9010, 16: 13240, 17: 271590, 18: 12110 };
-    const STEAM_HOSTS = [
-      id => `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${id}/header.jpg`,
-      id => `https://cdn.cloudflare.steamstatic.com/steam/apps/${id}/header.jpg`
+    const steamUrls = id => [
+      `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${id}/header.jpg`,
+      `https://cdn.cloudflare.steamstatic.com/steam/apps/${id}/header.jpg`
     ];
+    // libretro-thumbnails names follow No-Intro/Redump titles, with & : and similar replaced by _.
+    const lr = (system, name) =>
+      `https://raw.githubusercontent.com/libretro-thumbnails/${system}/master/Named_Boxarts/${encodeURIComponent(name)}.png`;
+    const BOXART = {
+      19: [lr('Sony_-_PlayStation_2', 'Simpsons, The - Hit _ Run (USA)'), lr('Nintendo_-_GameCube', 'Simpsons, The - Hit _ Run (USA)')],
+      20: [lr('Sony_-_PlayStation_3', 'Skate 3 (USA)')],
+      22: [lr('Sony_-_PlayStation_Portable', 'Pro Evolution Soccer 6 (Europe)'),
+           lr('Sony_-_PlayStation_Portable', 'Winning Eleven - Pro Evolution Soccer 2007 (USA)'),
+           lr('Sony_-_PlayStation_2', 'Pro Evolution Soccer 6 (Europe)')],
+      23: [lr('Sony_-_PlayStation', 'Diablo (USA)')]
+    };
+    const WIKI = {
+      1: 'Call of Duty: Black Ops', 2: 'Call of Duty: Black Ops', 3: 'Call of Duty: Black Ops',
+      4: 'Call of Duty: Black Ops II', 5: 'Call of Duty: Black Ops III', 6: 'Call of Duty: Modern Warfare 2',
+      7: 'Counter-Strike: Source', 8: 'Halo: Combat Evolved', 9: 'Halo: Combat Evolved',
+      10: 'Half-Life (video game)', 11: 'Counter-Strike (video game)', 12: 'Quake (video game)',
+      13: 'Quake II', 14: 'Quake III Arena', 15: 'Return to Castle Wolfenstein', 16: 'Unreal Tournament',
+      17: 'Grand Theft Auto V', 18: 'Grand Theft Auto: Vice City', 19: 'The Simpsons: Hit & Run',
+      20: 'Skate 3', 22: 'Pro Evolution Soccer 6', 23: 'Diablo (video game)', 24: 'Hedgewars', 25: 'Minecraft'
+    };
     const HUE = { cod: 38, fps: 8, open: 305, sports: 150, other: 262 };
-    const coverFailed = new Set();
+    const COVER_KEY = 'wasmarcade_covers_v1';
+    let coverOk = {};
+    try { coverOk = JSON.parse(localStorage.getItem(COVER_KEY) || '{}'); } catch (e) { coverOk = {}; }
+    const coverDead = new Set();
+    const wikiCache = {};
+
+    function coverSources(id) {
+      return [...(STEAM[id] ? steamUrls(STEAM[id]) : []), ...(BOXART[id] || [])];
+    }
+
+    function wikiImage(id) {
+      if (!WIKI[id]) return Promise.resolve(null);
+      if (!wikiCache[id]) {
+        const url = 'https://en.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(WIKI[id].replace(/ /g, '_'));
+        wikiCache[id] = fetch(url)
+          .then(r => (r.ok ? r.json() : null))
+          .then(j => {
+            const src = j && j.thumbnail && j.thumbnail.source;
+            return src ? src.replace(/\/\d+px-/, '/640px-') : null;
+          })
+          .catch(() => null);
+      }
+      return wikiCache[id];
+    }
 
     function coverHtml(g, small = false) {
-      const steam = STEAM[g.id];
-      const img = steam && !coverFailed.has(g.id)
-        ? `<img src="${STEAM_HOSTS[0](steam)}" alt="" loading="lazy" data-gid="${g.id}" data-try="0" onerror="coverError(this)">`
-        : '';
+      let img = '';
+      if (!coverDead.has(g.id)) {
+        const first = coverOk[g.id] || coverSources(g.id)[0];
+        const attrs = `alt="" loading="lazy" data-gid="${g.id}" data-i="${coverOk[g.id] ? -1 : 0}" onload="coverLoad(this)" onerror="coverError(this)"`;
+        img = first ? `<img src="${first}" ${attrs}>` : `<img ${attrs} data-pending="1">`;
+      }
       return `<div class="cover ${small ? 'sm rounded-lg' : ''}" style="--h:${HUE[g.cat]}">
           <div class="cover-fallback"><span class="ttl">${g.title}</span><span class="eng">${g.engine}</span></div>${img}
         </div>`;
     }
 
+    // Images with no static source go straight to Wikipedia.
+    function startPendingCovers() {
+      document.querySelectorAll('.cover img[data-pending]').forEach(img => {
+        img.removeAttribute('data-pending');
+        coverError(img);
+      });
+    }
+
     function coverError(img) {
-      const next = Number(img.dataset.try) + 1;
       const id = Number(img.dataset.gid);
-      if (next < STEAM_HOSTS.length) { img.dataset.try = next; img.src = STEAM_HOSTS[next](STEAM[id]); }
-      else { coverFailed.add(id); img.remove(); }
+      if (Number(img.dataset.i) === -1) {          // a remembered URL stopped working
+        delete coverOk[id];
+        try { localStorage.setItem(COVER_KEY, JSON.stringify(coverOk)); } catch (e) {}
+      }
+      const list = coverSources(id);
+      const next = Number(img.dataset.i) + 1;
+      if (next < list.length) { img.dataset.i = next; img.src = list[next]; return; }
+      if (!img.dataset.wiki) {
+        img.dataset.wiki = '1';
+        wikiImage(id).then(src => { if (src) img.src = src; else giveUp(img, id); });
+        return;
+      }
+      giveUp(img, id);
+    }
+
+    function giveUp(img, id) {
+      coverDead.add(id);
+      img.remove();
+    }
+
+    function coverLoad(img) {
+      const id = Number(img.dataset.gid);
+      const src = img.currentSrc || img.src;
+      if (coverOk[id] !== src) {
+        coverOk[id] = src;
+        try { localStorage.setItem(COVER_KEY, JSON.stringify(coverOk)); } catch (e) {}
+      }
+      // Box art is portrait; show it whole over a blurred copy instead of cropping it.
+      if (img.naturalHeight > img.naturalWidth * 0.8) {
+        const cover = img.parentElement;
+        cover.classList.add('fit');
+        cover.style.setProperty('--img', `url("${src}")`);
+      }
     }
 
     /* ===================== STATE ===================== */
@@ -428,7 +517,7 @@
     try { view = localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'grid'; } catch (e) {}
     const tel = { webgpu: null, gpu: null, threads: null, pad: null, storage: null };
 
-    lang = (navigator.language || '').startsWith('km') ? 'km' : 'en';
+    lang = 'km';  // Khmer by default; a saved choice wins
     try { lang = localStorage.getItem(LANG_KEY) || lang; } catch (e) {}
     try { favorites = JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch (e) { favorites = []; }
 
@@ -527,6 +616,7 @@
         grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
         grid.innerHTML = list.map(gridCard).join('');
       }
+      startPendingCovers();
     }
 
     function favButton(g, extra = '') {
