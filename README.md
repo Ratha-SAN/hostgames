@@ -1,6 +1,6 @@
 # WasmArcade
 
-Bilingual (Khmer / English) launcher for 25 classic browser game ports, hosted on Firebase Hosting.
+Bilingual (Khmer / English) launcher for 28 classic browser game ports, hosted on Firebase Hosting.
 
 - `public/index.html` is the whole site (single page, no build step).
 - `firebase.json` configures Firebase Hosting.
