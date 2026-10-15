@@ -65,6 +65,10 @@
     .cover.sm .ttl { font-size: .62rem; }
     .cover.sm .eng { display: none; }
     .cover.sm .cover-fallback { padding: .35rem .45rem; }
+    .tab { position: relative; padding: .7rem 1rem; font-size: .95rem; font-weight: 600; color: #8b95a7; transition: color .15s; }
+    .tab:hover { color: #fff; }
+    .tab[aria-selected="true"] { color: #fff; }
+    .tab[aria-selected="true"]::after { content: ''; position: absolute; left: .5rem; right: .5rem; bottom: -1px; height: 2px; border-radius: 2px; background: #2dd4bf; }
     .chev { transition: transform .2s; }
     [aria-expanded="true"] .chev { transform: rotate(180deg); }
     .seg button[aria-pressed="true"] { background: #2dd4bf; color: #0c0f15; }
@@ -108,6 +112,10 @@
 
     <!-- ============ LIBRARY ============ -->
     <section class="flex flex-col gap-4">
+      <div role="tablist" class="flex gap-1 border-b border-ink-line" data-i18n-title="tabsLabel">
+        <button id="tab-classic" role="tab" onclick="setTab('classic')" class="tab"><i class="fa-solid fa-gamepad mr-2 text-xs"></i><span data-i18n="tab_classic"></span></button>
+        <button id="tab-web" role="tab" onclick="setTab('web')" class="tab"><i class="fa-solid fa-globe mr-2 text-xs"></i><span data-i18n="tab_web"></span></button>
+      </div>
       <div class="flex items-end justify-between gap-3">
         <div><h2 class="text-lg font-bold text-white" data-i18n="library"></h2><p class="text-sm text-ink-muted km-tight"><span data-i18n="opensInTab"></span> <span data-i18n="coverCredit"></span></p></div>
         <span id="count" class="text-sm text-ink-muted"></span>
@@ -220,7 +228,7 @@
     /* ===================== I18N ===================== */
     const I18N = {
       en: {
-        tagline: '36 games, right in your browser', opensInTab: 'Each game opens in a new tab.', altServer: 'Alternate server', langLabel: 'Language', viewGrid: 'Grid view', viewList: 'List view', showDetails: 'Show details', hideDetails: 'Hide details', servers: 'Servers', engineLabel: 'Engine', memLabel: 'Memory (estimate)', memOf: 'of the 4 GB tab limit', coverCredit: 'Covers load from Steam, libretro and Wikipedia when available.', primary: 'Main',
+        tagline: '37 games, right in your browser', tab_classic: 'Classic games', tab_web: 'Web apps', tabsLabel: 'Game sections', featured: 'Featured', opensInTab: 'Each game opens in a new tab.', altServer: 'Alternate server', langLabel: 'Language', viewGrid: 'Grid view', viewList: 'List view', showDetails: 'Show details', hideDetails: 'Hide details', servers: 'Servers', engineLabel: 'Engine', memLabel: 'Memory (estimate)', memOf: 'of the 4 GB tab limit', coverCredit: 'Covers load from Steam, libretro and Wikipedia when available.', primary: 'Main',
         system: 'System', fileChecker: 'File checker', storage: 'Storage', close: 'Close',
         library: 'Game library', searchPh: 'Search games or engines…',
         st_all: 'All games', st_ready: 'Ready to play', st_repaired: 'Fixed links', st_rom: 'Needs your file', st_favorites: 'Favorites',
@@ -256,7 +264,7 @@
         footer: 'Games are hosted on third-party sites. Links may change or stop working.'
       },
       km: {
-        tagline: 'ហ្គេម ៣៦ លេងផ្ទាល់ក្នុងកម្មវិធីរុករក', opensInTab: 'ហ្គេមនីមួយៗបើកក្នុងផ្ទាំងថ្មី។', altServer: 'ម៉ាស៊ីនមេជំនួស', langLabel: 'ភាសា', viewGrid: 'ទិដ្ឋភាពក្រឡា', viewList: 'ទិដ្ឋភាពបញ្ជី', showDetails: 'បង្ហាញព័ត៌មានលម្អិត', hideDetails: 'លាក់ព័ត៌មានលម្អិត', servers: 'ម៉ាស៊ីនមេ', engineLabel: 'ម៉ាស៊ីនហ្គេម', memLabel: 'អង្គចងចាំ (ប៉ាន់ស្មាន)', memOf: 'ក្នុងចំណោមដែនកំណត់ ៤ GB របស់ផ្ទាំង', coverCredit: 'រូបក្របផ្ទុកពី Steam, libretro និង Wikipedia នៅពេលមាន។', primary: 'មេ',
+        tagline: 'ហ្គេម ៣៧ លេងផ្ទាល់ក្នុងកម្មវិធីរុករក', tab_classic: 'ហ្គេមបុរាណ', tab_web: 'កម្មវិធីវេប', tabsLabel: 'ផ្នែកហ្គេម', featured: 'ពិសេស', opensInTab: 'ហ្គេមនីមួយៗបើកក្នុងផ្ទាំងថ្មី។', altServer: 'ម៉ាស៊ីនមេជំនួស', langLabel: 'ភាសា', viewGrid: 'ទិដ្ឋភាពក្រឡា', viewList: 'ទិដ្ឋភាពបញ្ជី', showDetails: 'បង្ហាញព័ត៌មានលម្អិត', hideDetails: 'លាក់ព័ត៌មានលម្អិត', servers: 'ម៉ាស៊ីនមេ', engineLabel: 'ម៉ាស៊ីនហ្គេម', memLabel: 'អង្គចងចាំ (ប៉ាន់ស្មាន)', memOf: 'ក្នុងចំណោមដែនកំណត់ ៤ GB របស់ផ្ទាំង', coverCredit: 'រូបក្របផ្ទុកពី Steam, libretro និង Wikipedia នៅពេលមាន។', primary: 'មេ',
         system: 'ប្រព័ន្ធ', fileChecker: 'ពិនិត្យឯកសារ', storage: 'ទំហំផ្ទុក', close: 'បិទ',
         library: 'បណ្ណាល័យហ្គេម', searchPh: 'ស្វែងរកហ្គេម ឬម៉ាស៊ីនហ្គេម…',
         st_all: 'ហ្គេមទាំងអស់', st_ready: 'លេងបានភ្លាម', st_repaired: 'តំណបានជួសជុល', st_rom: 'ត្រូវការឯកសាររបស់អ្នក', st_favorites: 'ចំណូលចិត្ត',
@@ -417,7 +425,10 @@
         en: 'Fast hexagon puzzle inspired by Tetris. Open source.', km: 'ល្បែងផ្គុំរូបឆកោណលឿន បំផុសគំនិតពី Tetris។ កូដបើកចំហ។' },
       { id: 36, title: 'A Dark Room', cat: 'web', tier: 'ready', engine: 'HTML5', ramMb: 60,
         mirrors: ['https://adarkroom.doublespeakgames.com/'],
-        en: 'Minimalist text adventure that slowly grows.', km: 'ហ្គេមផ្សងព្រេងជាអក្សរសាមញ្ញ ដែលរីកធំឡើងបន្តិចម្ដងៗ។' }
+        en: 'Minimalist text adventure that slowly grows.', km: 'ហ្គេមផ្សងព្រេងជាអក្សរសាមញ្ញ ដែលរីកធំឡើងបន្តិចម្ដងៗ។' },
+      { id: 37, title: 'Ouk Khmer', cat: 'web', tier: 'ready', engine: 'Web app', ramMb: 100, featured: true,
+        mirrors: ['https://oukkhmer.web.app/'],
+        en: 'Ouk, traditional Khmer chess, in your browser.', km: 'អុក ល្បែងអុកប្រពៃណីខ្មែរ លេងក្នុងកម្មវិធីរុករក។' }
     ];
 
     /* ===================== COVERS ===================== */
@@ -544,6 +555,12 @@
     let lang = 'en';
     let statusFilter = 'all';
     let catFilter = 'all';
+    const TAB_KEY = 'wasmarcade_tab';
+    let tab = 'classic';
+    try { tab = localStorage.getItem(TAB_KEY) === 'web' ? 'web' : 'classic'; } catch (e) {}
+    if (location.hash === '#web') tab = 'web';
+    if (location.hash === '#classic') tab = 'classic';
+    const inTab = g => (tab === 'web') === (g.cat === 'web');
     let activeGame = null;
     let currentUrl = null;
     let adShield = false;
@@ -596,14 +613,16 @@
     function renderStatusOptions() {
       const sel = document.getElementById('status');
       sel.innerHTML = STATUSES.map(s => {
-        const n = s === 'all' ? GAMES.length : s === 'favorites' ? favorites.length : GAMES.filter(g => g.tier === s).length;
+        const pool = GAMES.filter(inTab);
+        const n = s === 'all' ? pool.length : s === 'favorites' ? pool.filter(g => favorites.includes(g.id)).length : pool.filter(g => g.tier === s).length;
         return `<option value="${s}" ${s === statusFilter ? 'selected' : ''}>${t('st_' + s)} (${num(n)})</option>`;
       }).join('');
     }
 
     function renderCategories() {
       const wrap = document.getElementById('cats');
-      const items = [{ id: 'all', label: t('cat_all') }, ...CATEGORIES.map(c => ({ id: c.id, label: c[lang] }))];
+      wrap.hidden = tab === 'web';  // the Web apps tab is a single category
+      const items = [{ id: 'all', label: t('cat_all') }, ...CATEGORIES.filter(c => c.id !== 'web').map(c => ({ id: c.id, label: c[lang] }))];
       wrap.innerHTML = items.map(c =>
         `<button class="chip" aria-pressed="${c.id === catFilter}" onclick="catFilter='${c.id}'; renderCategories(); renderGrid()">${c.label}</button>`
       ).join('');
@@ -627,6 +646,7 @@
     function renderGrid() {
       const q = document.getElementById('search').value.trim().toLowerCase();
       const list = GAMES.filter(g => {
+        if (!inTab(g)) return false;
         if (statusFilter === 'favorites' && !favorites.includes(g.id)) return false;
         if (!['all', 'favorites'].includes(statusFilter) && g.tier !== statusFilter) return false;
         if (catFilter !== 'all' && g.cat !== catFilter) return false;
@@ -634,7 +654,8 @@
         return true;
       });
 
-      document.getElementById('count').textContent = t('showing', { n: num(list.length), total: num(GAMES.length) });
+      list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+      document.getElementById('count').textContent = t('showing', { n: num(list.length), total: num(GAMES.filter(inTab).length) });
       const grid = document.getElementById('grid');
 
       if (!list.length) {
@@ -664,7 +685,7 @@
     }
 
     function badge(g) {
-      return `<span class="px-2 py-0.5 rounded-md border text-xs whitespace-nowrap ${BADGE[g.tier]}">${t('badge_' + g.tier)}</span>`;
+      return (g.featured ? `<span class="px-2 py-0.5 rounded-md border text-xs whitespace-nowrap bg-amber-400/15 text-amber-200 border-amber-400/40 mr-1"><i class="fa-solid fa-star mr-1 text-[10px]"></i>${t('featured')}</span>` : '') + `<span class="px-2 py-0.5 rounded-md border text-xs whitespace-nowrap ${BADGE[g.tier]}">${t('badge_' + g.tier)}</span>`;
     }
 
     // Shared detail panel: shown when a card or row is expanded.
@@ -763,6 +784,24 @@
         const btn = el && el.querySelector('[aria-expanded]');
         if (btn) btn.focus({ preventScroll: true });
       }
+    }
+
+    function setTab(next, remember = true) {
+      tab = next;
+      catFilter = 'all';
+      expandedId = null;
+      if (remember) {
+        try { localStorage.setItem(TAB_KEY, next); } catch (e) {}
+        try { history.replaceState(null, '', '#' + next); } catch (e) {}
+      }
+      ['classic', 'web'].forEach(k => {
+        const b = document.getElementById('tab-' + k);
+        b.setAttribute('aria-selected', k === next);
+        b.tabIndex = k === next ? 0 : -1;
+      });
+      renderStatusOptions();
+      renderCategories();
+      renderGrid();
     }
 
     function setView(v) {
@@ -941,6 +980,7 @@
 
     /* ===================== INIT ===================== */
     setView(view);
+    setTab(tab, false);
     setLang(lang === 'en' ? 'en' : 'km', false);
     initTelemetry();
   </script>
