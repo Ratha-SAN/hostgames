@@ -22,6 +22,7 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          projectId: ${{ vars.FIREBASE_PROJECT_ID }}
+          # Accept the project ID as a repo variable or, if added on the Secrets tab, as a secret.
+          projectId: ${{ vars.FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
           # main goes live; pull requests get a temporary preview URL posted as a comment.
           channelId: ${{ github.ref == 'refs/heads/main' && 'live' || '' }}
